@@ -1,13 +1,13 @@
-package main
+package test
 
 import (
 	"encoding/json"
 	"fmt"
 	"github.com/fentec-project/gofe/abe"
+	"testing"
 )
 
-func main() {
-
+func TestDemo(t *testing.T) {
 	inst := abe.NewFAME()
 	instJson, _ := json.Marshal(inst)
 	fmt.Println("instJson", instJson)
