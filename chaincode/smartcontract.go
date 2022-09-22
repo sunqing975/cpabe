@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/fentec-project/gofe/abe"
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
+	"strings"
 )
 
 // SmartContract provides functions for managing an Asset
@@ -54,10 +55,10 @@ func (s *SmartContract) Encrypt(ctx contractapi.TransactionContextInterface, msg
 	err = ctx.GetStub().PutState("cipher", cipherJson)
 }
 
-func (s *SmartContract) GenerateAttribKeys(ctx contractapi.TransactionContextInterface, gamma []string) {
+func (s *SmartContract) GenerateAttribKeys(ctx contractapi.TransactionContextInterface, gammaStr string) {
 	inst, _ := s.ReadInst(ctx)
 	secKey, err := s.ReadSec(ctx)
-
+	gamma := strings.Split(gammaStr, ",")
 	keys, err := inst.GenerateAttribKeys(gamma, secKey)
 	if err != nil {
 		panic(err)
