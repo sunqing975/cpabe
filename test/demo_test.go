@@ -8,16 +8,17 @@ import (
 )
 
 func TestDemo(t *testing.T) {
+	//t := time.Now()
 	inst := abe.NewFAME()
 	instJson, _ := json.Marshal(inst)
-	fmt.Println("instJson", instJson)
+	//fmt.Println("instJson", instJson)
 
 	var new_inst abe.FAME
 	err := json.Unmarshal(instJson, &new_inst)
 	if err != nil {
 		return
 	}
-	fmt.Println("new_inst", new_inst)
+	//fmt.Println("new_inst", new_inst)
 
 	// 生成主密钥 和 公共密钥
 	pubKey, secKey, err := new_inst.GenerateMasterKeys()
@@ -69,4 +70,6 @@ func TestDemo(t *testing.T) {
 	}
 
 	fmt.Println(msgCheck)
+	//delta := time.Now().Sub(t)
+	//fmt.Println("时间差：", delta)
 }
