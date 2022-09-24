@@ -13,7 +13,7 @@ type SmartContract struct {
 	contractapi.Contract
 }
 
-func (s *SmartContract) GenerateMasterKeys(ctx contractapi.TransactionContextInterface) (*abe.FAME, *abe.FAMEPubKey, *abe.FAMESecKey, error) {
+func (s *SmartContract) GenerateMasterKeys(ctx contractapi.TransactionContextInterface) error {
 	inst := abe.NewFAME()
 	pubKey, secKey, err := inst.GenerateMasterKeys()
 	instJson, err := json.Marshal(inst)
@@ -22,21 +22,21 @@ func (s *SmartContract) GenerateMasterKeys(ctx contractapi.TransactionContextInt
 
 	err = ctx.GetStub().PutState("inst", instJson)
 	if err != nil {
-		return nil, nil, nil, err
+		return err
 	}
 	err = ctx.GetStub().PutState("pubKey", pubKeyJson)
 	if err != nil {
-		return nil, nil, nil, err
+		return err
 	}
 	err = ctx.GetStub().PutState("secKey", secKeyJson)
 	if err != nil {
-		return nil, nil, nil, err
+		return err
 	}
-	return inst, pubKey, secKey, nil
+	return nil
 }
 
 // Encrypt encryption
-func (s *SmartContract) Encrypt(ctx contractapi.TransactionContextInterface, msg string, boolExp string) (*abe.FAMECipher, error) {
+func (s *SmartContract) Encrypt(ctx contractapi.TransactionContextInterface, msg string, boolExp string) error {
 	inst, _ := s.ReadInst(ctx)
 	pubKey, _ := s.ReadPub(ctx)
 	// 构造策略信息
@@ -44,34 +44,35 @@ func (s *SmartContract) Encrypt(ctx contractapi.TransactionContextInterface, msg
 	//"((清华 AND 计算机) OR (北大 AND 数学))"
 	msp, err := abe.BooleanToMSP(boolExp, false)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	// 生成密文数据
 	cipher, err := inst.Encrypt(msg, msp, pubKey)
 	if err != nil {
-		panic(err)
+		return nil
 	}
 	cipherJson, err := json.Marshal(cipher)
 	err = ctx.GetStub().PutState("cipher", cipherJson)
-	return cipher, nil
+	return nil
 }
 
-func (s *SmartContract) GenerateAttribKeys(ctx contractapi.TransactionContextInterface, gammaStr string) {
+func (s *SmartContract) GenerateAttribKeys(ctx contractapi.TransactionContextInterface, gammaStr string) error {
 	inst, _ := s.ReadInst(ctx)
 	secKey, err := s.ReadSec(ctx)
 	gamma := strings.Split(gammaStr, ",")
 	keys, err := inst.GenerateAttribKeys(gamma, secKey)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	keysJson, err := json.Marshal(keys)
 	err = ctx.GetStub().PutState("keys", keysJson)
 	if err != nil {
-		return
+		return err
 	}
+	return nil
 }
 
-func (s *SmartContract) Decrypt(ctx contractapi.TransactionContextInterface) {
+func (s *SmartContract) Decrypt(ctx contractapi.TransactionContextInterface) error {
 	inst, _ := s.ReadInst(ctx)
 	pubKey, _ := s.ReadPub(ctx)
 	cipher, _ := s.ReadCipher(ctx)
@@ -79,10 +80,11 @@ func (s *SmartContract) Decrypt(ctx contractapi.TransactionContextInterface) {
 	//解密
 	msgCheck, err := inst.Decrypt(cipher, keys, pubKey)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	msg, err := json.Marshal(msgCheck)
 	fmt.Println(msg)
+	return nil
 }
 
 func (s *SmartContract) ReadKeys(ctx contractapi.TransactionContextInterface) (*abe.FAMEAttribKeys, error) {
