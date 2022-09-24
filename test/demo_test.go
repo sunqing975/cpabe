@@ -8,7 +8,7 @@ import (
 )
 
 func TestDemo(t *testing.T) {
-	//t := time.Now()
+
 	inst := abe.NewFAME()
 	instJson, _ := json.Marshal(inst)
 	//fmt.Println("instJson", instJson)
@@ -18,8 +18,6 @@ func TestDemo(t *testing.T) {
 	if err != nil {
 		return
 	}
-	//fmt.Println("new_inst", new_inst)
-
 	// 生成主密钥 和 公共密钥
 	pubKey, secKey, err := new_inst.GenerateMasterKeys()
 	if err != nil {
@@ -68,8 +66,5 @@ func TestDemo(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-
 	fmt.Println(msgCheck)
-	//delta := time.Now().Sub(t)
-	//fmt.Println("时间差：", delta)
 }

@@ -8,6 +8,14 @@ import (
 	"strings"
 )
 
+type Asset struct {
+	Inst   *abe.FAME           `json:"cpabe_inst"`
+	PubKey *abe.FAMEPubKey     `json:"pubKey"`
+	SecKey *abe.FAMESecKey     `json:"secKey"`
+	Cipher *abe.FAMECipher     `json:"cipher"`
+	Keys   *abe.FAMEAttribKeys `json:"keys"`
+}
+
 // SmartContract provides functions for managing an Asset
 type SmartContract struct {
 	contractapi.Contract
@@ -16,6 +24,7 @@ type SmartContract struct {
 func (s *SmartContract) GenerateMasterKeys(ctx contractapi.TransactionContextInterface) error {
 	inst := abe.NewFAME()
 	pubKey, secKey, err := inst.GenerateMasterKeys()
+
 	instJson, err := json.Marshal(inst)
 	pubKeyJson, err := json.Marshal(pubKey)
 	secKeyJson, err := json.Marshal(secKey)
@@ -37,8 +46,9 @@ func (s *SmartContract) GenerateMasterKeys(ctx contractapi.TransactionContextInt
 
 // Encrypt encryption
 func (s *SmartContract) Encrypt(ctx contractapi.TransactionContextInterface, msg string, boolExp string) error {
-	inst, _ := s.ReadInst(ctx)
-	pubKey, _ := s.ReadPub(ctx)
+	readInst, _ := s.ReadInst(ctx)
+	readPub, _ := s.ReadPub(ctx)
+
 	// 构造策略信息
 	// "((0 AND 1) OR (2 AND 3)) AND 5",
 	//"((清华 AND 计算机) OR (北大 AND 数学))"
@@ -47,7 +57,7 @@ func (s *SmartContract) Encrypt(ctx contractapi.TransactionContextInterface, msg
 		return err
 	}
 	// 生成密文数据
-	cipher, err := inst.Encrypt(msg, msp, pubKey)
+	cipher, err := readInst.Inst.Encrypt(msg, msp, readPub.PubKey)
 	if err != nil {
 		return nil
 	}
@@ -57,10 +67,11 @@ func (s *SmartContract) Encrypt(ctx contractapi.TransactionContextInterface, msg
 }
 
 func (s *SmartContract) GenerateAttribKeys(ctx contractapi.TransactionContextInterface, gammaStr string) error {
-	inst, _ := s.ReadInst(ctx)
-	secKey, err := s.ReadSec(ctx)
+	readInst, _ := s.ReadInst(ctx)
+	readSec, _ := s.ReadSec(ctx)
+
 	gamma := strings.Split(gammaStr, ",")
-	keys, err := inst.GenerateAttribKeys(gamma, secKey)
+	keys, err := readInst.Inst.GenerateAttribKeys(gamma, readSec.SecKey)
 	if err != nil {
 		return err
 	}
@@ -73,12 +84,13 @@ func (s *SmartContract) GenerateAttribKeys(ctx contractapi.TransactionContextInt
 }
 
 func (s *SmartContract) Decrypt(ctx contractapi.TransactionContextInterface) error {
-	inst, _ := s.ReadInst(ctx)
-	pubKey, _ := s.ReadPub(ctx)
-	cipher, _ := s.ReadCipher(ctx)
-	keys, _ := s.ReadKeys(ctx)
+
+	readInst, _ := s.ReadInst(ctx)
+	readPub, _ := s.ReadPub(ctx)
+	readCipher, _ := s.ReadCipher(ctx)
+	readKeys, _ := s.ReadKeys(ctx)
 	//解密
-	msgCheck, err := inst.Decrypt(cipher, keys, pubKey)
+	msgCheck, err := readInst.Inst.Decrypt(readCipher.Cipher, readKeys.Keys, readPub.PubKey)
 	if err != nil {
 		return err
 	}
@@ -87,7 +99,7 @@ func (s *SmartContract) Decrypt(ctx contractapi.TransactionContextInterface) err
 	return nil
 }
 
-func (s *SmartContract) ReadKeys(ctx contractapi.TransactionContextInterface) (*abe.FAMEAttribKeys, error) {
+func (s *SmartContract) ReadKeys(ctx contractapi.TransactionContextInterface) (*Asset, error) {
 	keysJson, err := ctx.GetStub().GetState("keys")
 	if err != nil {
 		return nil, fmt.Errorf("failed to read from world state: %v", err)
@@ -95,12 +107,14 @@ func (s *SmartContract) ReadKeys(ctx contractapi.TransactionContextInterface) (*
 	if keysJson == nil {
 		return nil, fmt.Errorf("the inst does not exist")
 	}
-	var keys abe.FAMEAttribKeys
-	err = json.Unmarshal(keysJson, &keys)
-	return &keys, err
+
+	var asset Asset
+	//var keys abe.FAMEAttribKeys
+	err = json.Unmarshal(keysJson, asset.Keys)
+	return &asset, err
 }
 
-func (s *SmartContract) ReadCipher(ctx contractapi.TransactionContextInterface) (*abe.FAMECipher, error) {
+func (s *SmartContract) ReadCipher(ctx contractapi.TransactionContextInterface) (*Asset, error) {
 	cipherJson, err := ctx.GetStub().GetState("cipher")
 	if err != nil {
 		return nil, fmt.Errorf("failed to read from world state: %v", err)
@@ -108,13 +122,14 @@ func (s *SmartContract) ReadCipher(ctx contractapi.TransactionContextInterface) 
 	if cipherJson == nil {
 		return nil, fmt.Errorf("the inst does not exist")
 	}
-	var cipher abe.FAMECipher
-	err = json.Unmarshal(cipherJson, &cipher)
-	return &cipher, err
+	var asset Asset
+	//var cipher abe.FAMECipher
+	err = json.Unmarshal(cipherJson, asset.Cipher)
+	return &asset, err
 }
 
 // ReadInst  returns the asset stored in the world state with given id.
-func (s *SmartContract) ReadInst(ctx contractapi.TransactionContextInterface) (*abe.FAME, error) {
+func (s *SmartContract) ReadInst(ctx contractapi.TransactionContextInterface) (*Asset, error) {
 	instJson, err := ctx.GetStub().GetState("inst")
 	if err != nil {
 		return nil, fmt.Errorf("failed to read from world state: %v", err)
@@ -122,18 +137,19 @@ func (s *SmartContract) ReadInst(ctx contractapi.TransactionContextInterface) (*
 	if instJson == nil {
 		return nil, fmt.Errorf("the inst does not exist")
 	}
-	var inst abe.FAME
-	err = json.Unmarshal(instJson, &inst)
+	var asset Asset
+	//var inst abe.FAME
+	err = json.Unmarshal(instJson, asset.Inst)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return &inst, nil
+	return &asset, nil
 }
 
 // ReadPub returns the asset stored in the world state with given id.
-func (s *SmartContract) ReadPub(ctx contractapi.TransactionContextInterface) (*abe.FAMEPubKey, error) {
+func (s *SmartContract) ReadPub(ctx contractapi.TransactionContextInterface) (*Asset, error) {
 	pubKeyJson, err := ctx.GetStub().GetState("pubKey")
 	if err != nil {
 		return nil, fmt.Errorf("failed to read from world state: %v", err)
@@ -141,17 +157,18 @@ func (s *SmartContract) ReadPub(ctx contractapi.TransactionContextInterface) (*a
 	if pubKeyJson == nil {
 		return nil, fmt.Errorf("the inst does not exist")
 	}
-	var pubKey abe.FAMEPubKey
-	err = json.Unmarshal(pubKeyJson, &pubKey)
+	var asset Asset
+	//var pubKey abe.FAMEPubKey
+	err = json.Unmarshal(pubKeyJson, asset.PubKey)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return &pubKey, nil
+	return &asset, nil
 }
 
-func (s *SmartContract) ReadSec(ctx contractapi.TransactionContextInterface) (*abe.FAMESecKey, error) {
+func (s *SmartContract) ReadSec(ctx contractapi.TransactionContextInterface) (*Asset, error) {
 	secKeyJson, err := ctx.GetStub().GetState("secKey")
 	if err != nil {
 		return nil, fmt.Errorf("failed to read from world state: %v", err)
@@ -159,10 +176,11 @@ func (s *SmartContract) ReadSec(ctx contractapi.TransactionContextInterface) (*a
 	if secKeyJson == nil {
 		return nil, fmt.Errorf("the inst does not exist")
 	}
-	var secKey abe.FAMESecKey
-	err = json.Unmarshal(secKeyJson, &secKey)
+	var asset Asset
+	//var secKey abe.FAMESecKey
+	err = json.Unmarshal(secKeyJson, asset.SecKey)
 	if err != nil {
 		return nil, err
 	}
-	return &secKey, nil
+	return &asset, nil
 }

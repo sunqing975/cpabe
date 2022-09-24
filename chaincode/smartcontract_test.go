@@ -31,10 +31,10 @@ func TestInitLedger(t *testing.T) {
 	transactionContext.GetStubReturns(chaincodeStub)
 
 	assetTransfer := chaincode.SmartContract{}
-	_, _, _, err := assetTransfer.GenerateMasterKeys(transactionContext)
+	err := assetTransfer.GenerateMasterKeys(transactionContext)
 
 	require.NoError(t, err)
-	_, err = assetTransfer.Encrypt(transactionContext, "abc", "((清华 AND 计算机) OR (北大 AND 数学))")
+	err = assetTransfer.Encrypt(transactionContext, "abc", "((清华 AND 计算机) OR (北大 AND 数学))")
 	if err != nil {
 		return
 	}
